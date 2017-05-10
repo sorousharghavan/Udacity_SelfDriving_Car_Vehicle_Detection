@@ -10,12 +10,32 @@ hist_bins = 32    # Number of histogram bins
 spatial_feat = True # Spatial features on or off
 hist_feat = True # Histogram features on or off
 hog_feat = True # HOG features on or off
-y_start_stop = [300, None] # Min and max in y to search in slide_window()
+
+#File names for saving model and scaler to be reused
+fname = "classifier.pkl"
+scaler_filename = "scaler.pkl"
+
+#Number of frames to average for smoothing
+avg_frames = 5
+counter = 0
+
+heatmap = None
+labels = None
 
 def process_frame(image):
+    global avg_frames
+    global counter
+    global heatmap
+    global labels 
+    
     draw_image = np.copy(image)
-    heatmap = np.zeros_like(image)
-    y_start_stop = [350, 550] 
+    
+    if (counter == 0):
+        heatmap = np.zeros_like(image)
+
+    #Small windows
+	#Min and max in y to search in slide_window().
+    y_start_stop = [380, 550]	
     window_size = (96, 96)
     overlap = (0.8, 0.8)
     windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
@@ -30,6 +50,7 @@ def process_frame(image):
 
     add_heat(heatmap, hot_windows)
 
+    #Medium windows
     y_start_stop = [400, 600] 
     window_size = (1.25*96, 1.25*96)
     windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
@@ -45,6 +66,7 @@ def process_frame(image):
 
     add_heat(heatmap, hot_windows)
 
+    #Large windows
     y_start_stop = [400, None] 
     window_size = (2*96, 2*96)
     windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop, 
@@ -57,19 +79,21 @@ def process_frame(image):
                             hog_channel=hog_channel, spatial_feat=spatial_feat, 
                             hist_feat=hist_feat, hog_feat=hog_feat)                       
 
-    #window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
-
     add_heat(heatmap, hot_windows)
-    heatmap = apply_threshold(heatmap, 3)
-    labels = label(heatmap)
 
+	#Label and draw boundaries based on heatmap every 5 frames
+    if (counter == avg_frames - 1):
+        heatmap = apply_threshold(heatmap, 12)
+        labels = label(heatmap)
+        counter = 0
+    else:
+        counter = counter + 1
+    
     window_img = draw_labeled_bboxes(draw_image, labels)
 
     return window_img
 
-image = mpimg.imread('./test_images/test1.jpg')
-fname = "classifier.pkl"
-scaler_filename = "scaler.pkl"
+#If model is saved reuse it, otherwise train a new model and save it
 if (os.path.isfile(fname) and os.path.isfile(scaler_filename)):
     svc = joblib.load(fname)
     X_scaler = joblib.load(scaler_filename)
@@ -82,12 +106,10 @@ else:
     for i in images:
         notcars.append(i)
     images = glob.glob('./vehicles/*.png')
-    #shuffle(images)
     for i in images:
         cars.append(i)
 
-    # Reduce the sample size because
-    # The quiz evaluator times out after 13s of CPU time
+    # Reduce the sample size to avoid running out of memory
     sample_size = 7000
     cars = cars[0:sample_size]
     notcars = notcars[0:sample_size]
@@ -129,6 +151,7 @@ else:
     t=time.time()
     svc.fit(X_train, y_train)
     t2 = time.time()
+    #Save model
     joblib.dump(svc, fname)
     print(round(t2-t, 2), 'Seconds to train SVC...')
     # Check the score of the SVC
@@ -140,33 +163,3 @@ output_file = 'test.mp4'
 clip1 = VideoFileClip("project_video.mp4")
 output_clip = clip1.fl_image(process_frame)
 output_clip.write_videofile(output_file, audio=False)
-
-#image = mpimg.imread('bbox-example-image.jpg')
-#draw_image = np.copy(image)
-
-# Uncomment the following line if you extracted training
-# data from .png images (scaled 0 to 1 by mpimg) and the
-# image you are searching is a .jpg (scaled 0 to 255)
-#image = image.astype(np.float32)/255
-
-#windows = slide_window(image, x_start_stop=[600, None], y_start_stop=y_start_stop, 
- #                   xy_window=(96, 96), xy_overlap=(0.8, 0.8))
-
-#hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space, 
- #                       spatial_size=spatial_size, hist_bins=hist_bins, 
- #                       orient=orient, pix_per_cell=pix_per_cell, 
- #                       cell_per_block=cell_per_block, 
- #                      hog_channel=hog_channel, spatial_feat=spatial_feat, 
-  #                      hist_feat=hist_feat, hog_feat=hog_feat)                       
-
-#window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)                    
-
-#heatmap = np.zeros_like(image)
-#add_heat(heatmap, hot_windows)
-#heatmap = apply_threshold(heatmap, 5)
-#labels = label(heatmap)
-
-#window_img = draw_labeled_bboxes(draw_image, labels)                    
-
-#plt.imshow(window_img)
-#plt.show()
