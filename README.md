@@ -14,6 +14,7 @@ The goals / steps of this project are the following:
 * Estimate a bounding box for vehicles detected.
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
+
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
 ---
@@ -99,6 +100,7 @@ Another interesting fact is that the labeling that is performed on the heatmap a
 
 ### Video Implementation
 
+
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 Here's a [link to my video result](./output.mp4)
 
@@ -125,4 +127,5 @@ The figures below display the heatmap after 1, 2, 3, 4 and 5 frames respectively
 * The model is capable of recognizing even high speed passing vehicles on the opposing lane. Some filtering might be needed to fix the issue.
 * The pipeline is extremely slow and definitely not fit for realtime analysis. One idea to improve the pipeline would be to start sliding windows around the windows from the last frame to avoid the need to search the whole frame.
 * RGB is not an ideal feature to base the model on. I did experiment with other color spaces and HOG channels but RGB proved to be the most successful. More experiment is needed to find a better colorspace.
+
 
